@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Riya - Restaurant Voice AI</title>
+    <style>
+        /* --- GLOBAL RESET & THEME --- */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body,
+        html {
+            background: linear-gradient(135deg, #1a0a0f 0%, #2d1b1f 50%, #3d2633 100%);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at 20% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(251, 146, 60, 0.15) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(20px, -20px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            width: 95%;
+            max-width: 500px;
+            height: 92vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+            backdrop-filter: blur(20px);
+            background: rgba(30, 20, 25, 0.7);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(135deg, #fff 0%, #ec4899 50%, #fb923c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .status {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 8px;
+            font-weight: 500;
+            min-height: 20px;
+        }
+
+        .status.active {
+            color: #10b981;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .status.error {
+            color: #ef4444;
+        }
+
+        /* IDENTITY TOGGLE */
+        .identity-switch {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #475569;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #ec4899;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(14px);
+        }
+
+        /* CONVERSATION DISPLAY */
+        .conversation {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 85%;
+            animation: slideIn 0.3s ease;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.system {
+            align-self: center;
+            background: rgba(100, 116, 139, 0.15);
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-style: italic;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background: rgba(16, 185, 129, 0.2);
+            color: #d1fae5;
+            border-bottom-left-radius: 4px;
+            border-left: 3px solid #10b981;
+        }
+
+        .message.error {
+            align-self: center;
+            background: rgba(239, 68, 68, 0.2);
+            color: #fecaca;
+            border-left: 3px solid #ef4444;
+            max-width: 90%;
+        }
+
+        /* CONTROLS */
+        .controls {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px;
+            border-radius: 12px;
+            width: 100%;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            color: white;
+        }
+
+        /* VOICE BUTTON */
+        .voice-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .voice-section.active {
+            display: flex;
+        }
+
+        .voice-instruction {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .voice-button-wrapper {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .voice-button {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            border: none;
+            cursor: pointer;
+            color: white;
+            box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.3s;
+        }
+
+        .voice-button:active {
+            transform: scale(0.95);
+        }
+
+        .voice-button.recording {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+            animation: recordPulse 1.5s infinite;
+        }
+
+        @keyframes recordPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .voice-button.processing {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            pointer-events: none;
+        }
+
+        .voice-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .recording-indicator {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: none;
+            white-space: nowrap;
+        }
+
+        .recording-indicator.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* TEXT INPUT */
+        .text-section {
+            display: none;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .text-section.active {
+            display: flex;
+        }
+
+        .text-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .text-input:focus {
+            border-color: #ec4899;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            color: white;
+            border: none;
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button:disabled {
+            background: rgba(100, 116, 139, 0.3);
+            color: #475569;
+            cursor: not-allowed;
+        }
+
+        /* VISUALIZER */
+        .audio-visualizer {
+            display: flex;
+            gap: 4px;
+            height: 24px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            align-items: center;
+        }
+
+        .audio-visualizer.active {
+            opacity: 1;
+        }
+
+        .viz-bar {
+            width: 4px;
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            border-radius: 2px;
+            animation: wave 1s infinite ease-in-out;
+        }
+
+        .viz-bar:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .viz-bar:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .viz-bar:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .viz-bar:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .viz-bar:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes wave {
+
+            0%,
+            100% {
+                transform: scaleY(0.3);
+            }
+
+            50% {
+                transform: scaleY(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🍽️ The Guru's Kitchen</h1>
+            <div class="subtitle">AI Hospitality Assistant (Riya)</div>
+            <div id="status" class="status">Connecting...</div>
+
+            <div class="identity-switch">
+                <span>New User</span>
+                <label class="switch">
+                    <input type="checkbox" id="userTypeToggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Returning User (+91...)</span>
+            </div>
+        </div>
+
+        <div class="conversation" id="conversation">
+            <div class="message system">👋 Hi! I'm Riya. How can I help you today?</div>
+        </div>
+
+        <div class="controls">
+            <div class="audio-visualizer" id="visualizer">
+                <div class="viz-bar"></div>
+                <div class="viz-bar"></div>
+                <div class="viz-bar"></div>
+                <div class="viz-bar"></div>
+                <div class="viz-bar"></div>
+            </div>
+
+            <div class="mode-tabs">
+                <button class="mode-tab" data-mode="voice">🎤 Voice</button>
+                <button class="mode-tab active" data-mode="text">💬 Text</button>
+            </div>
+
+            <div class="voice-section" id="voiceSection">
+                <div class="voice-instruction" id="voiceInstruction">Tap to speak to Riya</div>
+                <div class="voice-button-wrapper">
+                    <button class="voice-button" id="voiceButton">
+                        <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                    <div class="recording-indicator" id="recordingIndicator">Listening...</div>
+                </div>
+            </div>
+
+            <div class="text-section active" id="textSection">
+                <input type="text" id="textInput" class="text-input" placeholder="Type a message (Speaks Output)..."
+                    autocomplete="off">
+                <button id="sendButton" class="send-button">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const BASE_URL = 'http://127.0.0.1:8000';
+        const TEST_PHONE = '+919876543210';
+
+        // --- UI REFS ---
+        const ui = {
+            status: document.getElementById('status'),
+            conversation: document.getElementById('conversation'),
+            visualizer: document.getElementById('visualizer'),
+            voiceButton: document.getElementById('voiceButton'),
+            voiceSection: document.getElementById('voiceSection'),
+            voiceInstruction: document.getElementById('voiceInstruction'),
+            recordingIndicator: document.getElementById('recordingIndicator'),
+            textSection: document.getElementById('textSection'),
+            textInput: document.getElementById('textInput'),
+            sendButton: document.getElementById('sendButton'),
+            modeTabs: document.querySelectorAll('.mode-tab'),
+            userTypeToggle: document.getElementById('userTypeToggle')
+        };
+
+        // --- STATE ---
+        let isRecording = false;
+        let isProcessing = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        // 🔥 IDENTITY STATE: Stores phone number if backend detects it
+        let detectedSessionPhone = null;
+
+        // Helper: Get Caller ID based on toggle OR detected session
+        function getCallerId() {
+            if (detectedSessionPhone) return detectedSessionPhone;
+            return ui.userTypeToggle.checked ? TEST_PHONE : '';
+        }
+
+        // Helper: Add Message to Chat
+        function addMessage(text, type = 'system') {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = text;
+            ui.conversation.appendChild(div);
+            ui.conversation.scrollTop = ui.conversation.scrollHeight;
+            return div;
+        }
+
+        function setStatus(text, className = '') {
+            ui.status.textContent = text;
+            ui.status.className = 'status ' + className;
+        }
+
+        function setProcessing(processing) {
+            isProcessing = processing;
+            ui.textInput.disabled = processing;
+            ui.sendButton.disabled = processing;
+            if (processing) ui.visualizer.classList.add('active');
+            else ui.visualizer.classList.remove('active');
+        }
+
+        // --- MODE SWITCHING ---
+        ui.modeTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                ui.modeTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                if (tab.dataset.mode === 'voice') {
+                    ui.voiceSection.classList.add('active');
+                    ui.textSection.classList.remove('active');
+                } else {
+                    ui.voiceSection.classList.remove('active');
+                    ui.textSection.classList.add('active');
+                    ui.textInput.focus();
+                }
+            });
+        });
+
+        // --- AUDIO PLAYBACK ---
+        function playAudioResponse(blob) {
+            addMessage('(🔊 Playing Audio...)', 'bot');
+            setStatus('Speaking...', 'active');
+            ui.visualizer.classList.add('active');
+
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.onended = () => {
+                setStatus('Ready', 'active');
+                setProcessing(false);
+                URL.revokeObjectURL(url);
+            };
+            audio.play().catch(e => console.error("Playback failed:", e));
+        }
+
+        // --- VOICE MODE LOGIC ---
+        ui.voiceButton.addEventListener('click', async () => {
+            if (isProcessing) return;
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        await sendVoiceMessage(audioBlob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+
+                    ui.voiceButton.classList.add('recording');
+                    ui.recordingIndicator.classList.add('show');
+                    ui.voiceInstruction.textContent = 'Tap again to send';
+                    setStatus('Listening...', 'active');
+                } catch (error) {
+                    addMessage('Microphone access denied', 'error');
+                }
+            } else {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    ui.voiceButton.classList.remove('recording');
+                    ui.voiceButton.classList.add('processing');
+                    ui.recordingIndicator.classList.remove('show');
+                    ui.voiceInstruction.textContent = 'Thinking...';
+                    setProcessing(true);
+                }
+            }
+        });
+
+        async function sendVoiceMessage(audioBlob) {
+            const currentPhone = getCallerId();
+            const callerParam = currentPhone ? `?caller_phone=${encodeURIComponent(currentPhone)}` : '';
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'voice.wav');
+
+                const response = await fetch(`${BASE_URL}/api/book/voice${callerParam}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Server Error");
+
+                // --- CAPTURE IDENTITY HANDSHAKE ---
+                const headerPhone = response.headers.get("X-Detected-Phone");
+                if (headerPhone && headerPhone !== "null" && headerPhone !== "None") {
+                    console.log("🔒 VOICE IDENTITY LOCKED: " + headerPhone);
+                    detectedSessionPhone = headerPhone;
+                    ui.status.style.color = "#10b981";
+                    ui.userTypeToggle.checked = true;
+                    ui.userTypeToggle.disabled = true;
+                }
+                // ----------------------------------
+
+                const blob = await response.blob();
+                playAudioResponse(blob);
+            } catch (error) {
+                addMessage(`Error: ${error.message}`, 'error');
+                setProcessing(false);
+                ui.voiceButton.classList.remove('processing');
+            }
+        }
+
+        // --- TEXT MODE LOGIC (Text-to-Audio) ---
+        async function sendTextMessage() {
+            const text = ui.textInput.value.trim();
+            if (!text || isProcessing) return;
+
+            addMessage(text, 'user');
+            ui.textInput.value = '';
+            setProcessing(true);
+            setStatus('Riya is thinking...', 'active');
+
+            const callerId = getCallerId();
+            console.log(`Sending: "${text}" | Phone: ${callerId || 'Anonymous'}`);
+
+            try {
+                // 🔥 HIT THE AUDIO ENDPOINT, NOT THE STREAM
+                const response = await fetch(`${BASE_URL}/api/chat/text-to-audio`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, caller_phone: callerId || null })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Server Error");
+                }
+
+                // --- CAPTURE IDENTITY HANDSHAKE ---
+                const headerPhone = response.headers.get("X-Detected-Phone");
+                if (headerPhone && headerPhone !== "null" && headerPhone !== "None") {
+                    console.log("🔒 TEXT IDENTITY LOCKED: " + headerPhone);
+                    detectedSessionPhone = headerPhone;
+                    ui.status.style.color = "#10b981";
+                    ui.userTypeToggle.checked = true;
+                    ui.userTypeToggle.disabled = true;
+                }
+                // ----------------------------------
+
+                // Get Audio Blob and Play
+                const blob = await response.blob();
+                playAudioResponse(blob);
+
+            } catch (error) {
+                addMessage(`Error: ${error.message}`, 'error');
+                setProcessing(false);
+                setStatus('Error', 'error');
+            }
+        }
+
+        ui.sendButton.addEventListener('click', sendTextMessage);
+        ui.textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendTextMessage();
+        });
+
+        // --- INITIAL CHECK ---
+        (async function init() {
+            try {
+                const res = await fetch(`${BASE_URL}/health`);
+                if (res.ok) setStatus('Online', 'active');
+                else throw new Error();
+            } catch {
+                setStatus('Offline', 'error');
+                addMessage('⚠️ Backend not connected', 'error');
+            }
+        })();
+    </script>
+</body>
+
+</html>

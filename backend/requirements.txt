@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-dotenv
+openai
+supabase
+langdetect
+gTTS
+numpy
+python-multipart
